@@ -1,0 +1,9 @@
+# Second feeder: same firmware, its own name and credentials.
+substitutions:
+  name: symba-feeder
+  friendly_name: Symba Feeder
+  api_encryption_key: !secret symba_api_encryption_key
+  ota_password: !secret symba_ota_password
+
+packages:
+  feeder: !include petkit-element-solo.yaml
