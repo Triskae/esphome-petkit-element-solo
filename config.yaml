@@ -25,7 +25,7 @@ i2c:
     number: GPIO15
     ignore_strapping_warning: true
   scl: GPIO4
-  frequency: 200kHz # stock: I2C port 1, 200 kHz
+  frequency: 200kHz  # stock: I2C port 1, 200 kHz
   scan: true
 
 time:
@@ -106,7 +106,7 @@ binary_sensor:
       number: GPIO34
       inverted: true
     filters:
-      - delayed_on_off: 20ms # stock: 2 ticks of 10 ms
+      - delayed_on_off: 20ms  # stock: 2 ticks of 10 ms
   # SET button (stock: network pairing).
   - id: set_button
     platform: gpio
@@ -139,7 +139,7 @@ binary_sensor:
     pin:
       number: GPIO13
     filters:
-      - delayed_on_off: 30ms # stock: 3 identical reads
+      - delayed_on_off: 30ms  # stock: 3 identical reads
   # High = running on batteries.
   - id: on_battery
     platform: gpio
