@@ -5,8 +5,8 @@
 The feeder runs from a DC adapter or from batteries:
 
 - **GPIO21 high** means running on batteries;
-- **GPIO39** measures the DC input voltage (`dc_mv`);
-- **GPIO36** measures the battery voltage (`bat_mv`).
+- **GPIO39** measures the DC input voltage;
+- **GPIO36** measures the battery voltage.
 
 Both voltages sit behind a 147/47 divider (see [hardware.md](hardware.md#supply-voltages)).
 
@@ -25,7 +25,7 @@ A feed does not start while `DC_ERR` is set. ESPHome exposes it as `Power fault`
 
 ### Low battery
 
-On batteries, a feed is refused when the battery is at or below **5.499 V** (`app self check, low energy`). ESPHome exposes it as `Low battery` and refuses feeds the same way.
+On batteries, a feed is refused when the battery is at or below **5.499 V**. ESPHome exposes it as `Low battery` and refuses feeds the same way.
 
 ### Battery-only behaviour (stock)
 
@@ -57,7 +57,7 @@ An IR beam crosses the hopper: emitter on **GPIO2**, receiver on **GPIO13**.
 - **GPIO13 = 0** means food is present: a full hopper reads 0, checked on the device. The firmware calls this food state 2.
 - **GPIO13 = 1** means the food is low: food state 1.
 
-Each change is reported to the cloud (`need msg report, reason: food_sta`).
+Each change is reported to the cloud.
 
 **Food-low alarm.** While the food is low, the firmware plays **5 beeps of 500 ms on / 500 ms off every 30 s**, under these conditions:
 - the food-warning switch is on;

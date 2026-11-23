@@ -1,6 +1,6 @@
 # Hardware: pins and peripherals
 
-What each ESP32 pin does on the PETKIT Fresh Element Solo (D4), as read from the stock firmware (OTA image, ESP32 / ESP-IDF). The confidence column says how solid each line is:
+What each ESP32 pin does on the PETKIT Fresh Element Solo (D4), as established while studying the stock firmware's behaviour for interoperability. The confidence column says how solid each line is:
 
 - **confirmed**: the stock firmware uses the pin this way, without ambiguity;
 - **inferred**: the pin number is certain, its physical role is deduced from how it is used.
@@ -48,14 +48,14 @@ The name, together with the pull-up, suggests the motor driver's open-drain faul
 
 ## Motor current
 
-The firmware reads the shunt on ADC1 channel 4 (GPIO32) with 0 dB attenuation. Each read averages 32 samples and goes through the ESP-IDF calibration. The calibrated millivolts are then multiplied by **16 / 11**. All thresholds use that scaled value; the stock logs call it `motmv` / `max_mv`.
+The firmware reads the shunt on ADC1 channel 4 (GPIO32) with 0 dB attenuation. Each read averages 32 samples and goes through the ESP-IDF calibration. The calibrated millivolts are then multiplied by **16 / 11**. All thresholds use that scaled value.
 
 ## Supply voltages
 
 Two ADC1 channels, read with 11 dB attenuation, sit behind a 147/47 divider. The firmware multiplies them by 147 / 47 ≈ 3.128 to get millivolts.
 
-- **GPIO39 is the DC input** (`dc_mv` in the stock logs).
-- **GPIO36 is the battery** (`bat_mv`). On batteries, the firmware keeps the highest reading of each 30-minute window, so that motor dips do not count.
+- **GPIO39 is the DC input**.
+- **GPIO36 is the battery**. On batteries, the firmware keeps the highest reading of each 30-minute window, so that motor dips do not count.
 
 See [power.md](power.md) for the thresholds.
 

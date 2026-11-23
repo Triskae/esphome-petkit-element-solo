@@ -79,7 +79,7 @@ A jam while reversing flips the motor back to forward the same way, and counts a
 
 ## After a run: the "replenish" step
 
-When a run ends normally, in either direction, the firmware compares the loops asked for the feed with the forward loops done. If some are missing, it logs `feed replenish start, remain N` and starts a forward run for the rest. That is how a feed continues after an un-jam reverse.
+When a run ends normally, in either direction, the firmware compares the loops asked for the feed with the forward loops done. If some are missing, it starts a forward run for the rest. That is how a feed continues after an un-jam reverse.
 
 ## Cancelling
 

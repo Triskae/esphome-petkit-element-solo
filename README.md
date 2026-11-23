@@ -2,7 +2,7 @@
 
 **Custom.** A replacement firmware for the PETKIT Fresh Element Solo (D4) cat feeder, with native Home Assistant integration.
 
-It feeds on its own schedule, offline and without Home Assistant, using the on-board RTC. Motor control, jam handling, sensors, buttons, sounds and power checks follow the stock firmware, as recovered by analysing it (see [Documentation](#documentation)). It started from a community ESPHome config and fixes several of its issues (see [docs/motion.md](docs/motion.md#changes-from-the-community-config)).
+It feeds on its own schedule, offline and without Home Assistant, using the on-board RTC. Motor control, jam handling, sensors, buttons, sounds and power checks follow the stock firmware's behaviour, studied on a device owned by the author for interoperability purposes (see [Documentation](#documentation)). It started from a community ESPHome config and fixes several of its issues (see [docs/motion.md](docs/motion.md#changes-from-the-community-config)).
 
 ## Quick start
 
@@ -107,7 +107,7 @@ The stock firmware stored local time in the RTC, while ESPHome stores UTC. So un
 - [docs/rtc-and-time.md](docs/rtc-and-time.md): how the stock firmware uses the RTC, and how ESPHome does
 - [docs/schedule.md](docs/schedule.md): the stock schedule format, offline triggering and battery sleep
 
-These pages describe behaviour in our own words and contain no code from the stock firmware.
+These pages describe the device's behaviour in our own words. They contain no code, binaries or other material from the stock firmware.
 
 
 ## Roadmap
