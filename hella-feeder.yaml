@@ -1,0 +1,25 @@
+# My first feeder. Shared hardware + logic, local copy of the component, my secrets.
+substitutions:
+  name: hella-feeder
+  friendly_name: Hella Feeder
+  ntp_server: !secret ntp_server
+  feeder_component_source: components
+
+packages:
+  hardware: !include config.yaml
+  feeder: !include feeder.yaml
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+web_server:
+  port: 80

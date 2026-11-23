@@ -6,7 +6,7 @@ This page covers three things:
 - how this ESPHome firmware reproduces that behaviour;
 - the few places where ESPHome had to make its own choices.
 
-The logic lives in [`feeder_motor.h`](../feeder_motor.h). It contains no ESPHome code, and [`test/feeder_motor_test.cpp`](../test/feeder_motor_test.cpp) tests it on a computer.
+The logic lives in [`components/feeder_motor/feeder_motor.h`](../components/feeder_motor/feeder_motor.h). It contains no ESPHome code, and [`test/feeder_motor_test.cpp`](../test/feeder_motor_test.cpp) tests it on a computer.
 
 ## Loops and portions
 

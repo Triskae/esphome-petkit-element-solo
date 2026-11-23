@@ -1,74 +1,41 @@
-# PETKIT Fresh Element Solo (D4) - ESPHome firmware
-# Behaviour mirrors the stock firmware (see docs/).
+# PETKIT Fresh Element Solo (D4): feeding logic, on top of config.yaml.
+# Follows the stock firmware: loop counting, jam handling, outlet and hopper IR,
+# button gestures, LED, beeps and power checks (see docs/).
 
 substitutions:
-  name: hella-feeder
-  friendly_name: Hella Feeder
-  device_description: "Petkit Fresh Element Solo Pet Feeder"
+  timezone: Europe/Paris
+  ntp_server: pool.ntp.org
   default_scoops: "1"
   min_scoops: "0"
   max_scoops: "6"
-  name_add_mac_suffix: "false"
-  timezone: Europe/Paris
-  # Per-device credentials; a device file can point them at other secrets.
-  api_encryption_key: !secret api_encryption_key
-  ota_password: !secret ota_password
-  # Stock tones: 2 kHz buzzer. b6 is about 1976 Hz.
-  beep_short: "short:d=16,o=6,b=75:b"                  # 200 ms (stock beep type 3)
+  # Where the feeder_motor component comes from. Device files in this repo use the local copy.
+  feeder_component_source: github://Triskae/esphome-petkit-element-solo@main
+  # Stock tones: 2 kHz buzzer, b6 is about 1976 Hz.
+  beep_short: "short:d=16,o=6,b=75:b" # 200 ms (stock beep type 3)
   beep_food_low: "foodlow:d=8,o=6,b=60:b,p,b,p,b,p,b,p,b" # 5 x 500 ms on / 500 ms off
 
+external_components:
+  - source: ${feeder_component_source}
+    components: [feeder_motor]
+
+feeder_motor:
+
 esphome:
-  name: $name
-  friendly_name: $friendly_name
-  name_add_mac_suffix: $name_add_mac_suffix
-  comment: $device_description
-  includes:
-    - feeder_motor.h
   on_boot:
     priority: -100
     then:
       - delay: 1s
       - pcf8563.read_time:
           id: rtc_time
-      - output.turn_on: kibble_ir_emitter
       - light.turn_on:
           id: led
           effect: pairing_blink
 
-esp32:
-  variant: esp32
-  framework:
-    type: arduino
-  flash_size: 4MB
-
-logger:
-  level: DEBUG
-  baud_rate: 0
-
-i2c:
-  sda:
-    number: GPIO15
-    ignore_strapping_warning: true
-  scl: GPIO4
-  frequency: 200kHz # stock: I2C port 1, 200 kHz
-  scan: true
-
 wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
   reboot_timeout: 0s # keep feeding offline instead of rebooting every 15 min
 
 api:
-  encryption:
-    key: ${api_encryption_key}
   reboot_timeout: 0s
-
-ota:
-  - platform: esphome
-    password: ${ota_password}
-
-web_server:
-  port: 80
 
 globals:
   - id: food_sensor_count
@@ -218,59 +185,8 @@ script:
           ESP_LOGI("feeder", "Feed done: result=%d, %d/%d loops, %d with food, max %.0f mV, %d un-jam attempts",
                    result, m.loops_done(), m.target(), m.valid_loops(), m.max_current_mv(), m.attempts());
 
-light:
-  - platform: binary
-    id: led
-    output: led_output
-    effects:
-      # Stock LED styles: 2 = 80 ms blink (pairing), 3 = 500 ms blink (offline), 1 = on (online).
-      - strobe:
-          name: pairing_blink
-          colors:
-            - state: true
-              duration: 80ms
-            - state: false
-              duration: 80ms
-      - strobe:
-          name: offline_blink
-          colors:
-            - state: true
-              duration: 500ms
-            - state: false
-              duration: 500ms
-    internal: true
-
-output:
-  - id: led_output
-    platform: gpio
-    pin:
-      number: GPIO5
-      ignore_strapping_warning: true
-  # Buzzer. Stock drives it at 2 kHz / 50 % on the same pin.
-  - platform: ledc
-    pin: GPIO16
-    id: rtttl_output
-  # Motor H-bridge. Only the controller drives these (interval below).
-  - id: motor_enable # driver awake when high
-    platform: gpio
-    pin: GPIO19
-  - id: motor_in_a
-    platform: gpio
-    pin: GPIO17
-  - id: motor_in_b
-    platform: gpio
-    pin: GPIO18
-  # Kibble (hopper) IR emitter. Stock keeps it on when on DC power.
-  - id: kibble_ir_emitter
-    platform: gpio
-    pin:
-      number: GPIO2
-      ignore_strapping_warning: true
-
-rtttl:
-  output: rtttl_output
-
 interval:
+  # LED like stock: on while Home Assistant is connected, slow blink otherwise.
   - interval: 1s
     then:
       - lambda: |-
@@ -329,11 +245,6 @@ interval:
           }
           id(play_rtttl)->execute("${beep_food_low}");
 
-uart:
-  tx_pin: GPIO1
-  rx_pin: GPIO3
-  baud_rate: 9600
-
 number:
   - platform: template
     id: default_scoops
@@ -341,8 +252,8 @@ number:
     icon: mdi:cup
     entity_category: config
     min_value: 1
-    max_value: $max_scoops
-    initial_value: $default_scoops
+    max_value: ${max_scoops}
+    initial_value: ${default_scoops}
     optimistic: true
     step: 1
     restore_value: true
@@ -377,8 +288,8 @@ number:
     name: "00:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -390,8 +301,8 @@ number:
     name: "01:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -403,8 +314,8 @@ number:
     name: "02:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -416,8 +327,8 @@ number:
     name: "03:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -429,8 +340,8 @@ number:
     name: "04:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -442,8 +353,8 @@ number:
     name: "05:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -455,8 +366,8 @@ number:
     name: "06:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -468,8 +379,8 @@ number:
     name: "07:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -481,8 +392,8 @@ number:
     name: "08:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -494,8 +405,8 @@ number:
     name: "09:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -507,8 +418,8 @@ number:
     name: "10:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -520,8 +431,8 @@ number:
     name: "11:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -533,8 +444,8 @@ number:
     name: "12:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -546,8 +457,8 @@ number:
     name: "13:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -559,8 +470,8 @@ number:
     name: "14:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -572,8 +483,8 @@ number:
     name: "15:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -585,8 +496,8 @@ number:
     name: "16:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -598,8 +509,8 @@ number:
     name: "17:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -611,8 +522,8 @@ number:
     name: "18:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -624,8 +535,8 @@ number:
     name: "19:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -637,8 +548,8 @@ number:
     name: "20:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -650,8 +561,8 @@ number:
     name: "21:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -663,8 +574,8 @@ number:
     name: "22:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -676,8 +587,8 @@ number:
     name: "23:00 cups"
     icon: mdi:cup
     entity_category: config
-    min_value: $min_scoops
-    max_value: $max_scoops
+    min_value: ${min_scoops}
+    max_value: ${max_scoops}
     initial_value: 0
     optimistic: true
     step: 1
@@ -686,26 +597,22 @@ number:
     mode: slider
 
 time:
-  # The stock firmware stores local time in the RTC; ESPHome stores UTC.
-  # The first boot after flashing may be off by the old offset until SNTP syncs.
-  - platform: pcf8563
-    id: rtc_time
-    address: 0x51
-    timezone: $timezone
+  - id: !extend rtc_time
+    timezone: ${timezone}
   # Home Assistant time over the API: works even when the network blocks NTP.
   - platform: homeassistant
     id: ha_time
-    timezone: $timezone
+    timezone: ${timezone}
     on_time_sync:
       then:
         - pcf8563.write_time:
             id: rtc_time
   - id: sntp_time
     platform: sntp
-    timezone: $timezone
+    timezone: ${timezone}
     servers:
-      - !secret ntp_server
-      - 0.pool.ntp.org # fallbacks if the local server does not answer
+      - ${ntp_server}
+      - 0.pool.ntp.org
       - 1.pool.ntp.org
     on_time_sync:
       then:
@@ -717,29 +624,15 @@ time:
         seconds: 0
         then:
           - lambda: |-
-              number::Number *slots[24] = {
-                id(schedule_cups_0000), id(schedule_cups_0100), id(schedule_cups_0200), id(schedule_cups_0300),
-                id(schedule_cups_0400), id(schedule_cups_0500), id(schedule_cups_0600), id(schedule_cups_0700),
-                id(schedule_cups_0800), id(schedule_cups_0900), id(schedule_cups_1000), id(schedule_cups_1100),
-                id(schedule_cups_1200), id(schedule_cups_1300), id(schedule_cups_1400), id(schedule_cups_1500),
-                id(schedule_cups_1600), id(schedule_cups_1700), id(schedule_cups_1800), id(schedule_cups_1900),
-                id(schedule_cups_2000), id(schedule_cups_2100), id(schedule_cups_2200), id(schedule_cups_2300),
-              };
+              number::Number *slots[24] = {id(schedule_cups_0000), id(schedule_cups_0100), id(schedule_cups_0200), id(schedule_cups_0300), id(schedule_cups_0400), id(schedule_cups_0500), id(schedule_cups_0600), id(schedule_cups_0700), id(schedule_cups_0800), id(schedule_cups_0900), id(schedule_cups_1000), id(schedule_cups_1100), id(schedule_cups_1200), id(schedule_cups_1300), id(schedule_cups_1400), id(schedule_cups_1500), id(schedule_cups_1600), id(schedule_cups_1700), id(schedule_cups_1800), id(schedule_cups_1900), id(schedule_cups_2000), id(schedule_cups_2100), id(schedule_cups_2200), id(schedule_cups_2300)};
               int hour = id(sntp_time).now().hour;
               if (hour >= 0 && hour < 24) {
                 id(actuate_feeder)->execute((int) slots[hour]->state);
               }
 
 binary_sensor:
-  # FUNC button (stock): press = key beep, click = cancel the feed, hold ~1.5 s = feed while held.
-  - id: manual_feed_button
-    internal: true
-    platform: gpio
-    pin:
-      number: GPIO34
-      inverted: true
-    filters:
-      - delayed_on_off: 20ms # stock: 2 ticks of 10 ms
+  # FUNC button: press = key beep, click = cancel the feed, hold ~1.5 s = feed while held.
+  - id: !extend manual_feed_button
     on_press:
       then:
         - lambda: id(play_rtttl)->execute("${beep_short}");
@@ -758,47 +651,36 @@ binary_sensor:
                 ESP_LOGI("feeder", "Feed cancelled by button");
                 m.cancel(millis());
               }
-  # SET button (stock: press = key beep, long = network pairing). Only the beep here.
-  - id: set_button
-    internal: true
-    platform: gpio
-    pin:
-      number: GPIO0
-      inverted: true
-      ignore_strapping_warning: true
-    filters:
-      - delayed_on_off: 20ms
+  # SET button: key beep (stock long press = network pairing, not implemented).
+  - id: !extend set_button
     on_press:
       then:
         - lambda: id(play_rtttl)->execute("${beep_short}");
-  # Grate switch, low when the grate closes the outlet: one loop per closure.
-  - id: motor_sensor
-    internal: true
-    platform: gpio
-    pin:
-      number: GPIO27
-      inverted: true
+  # One loop per grate closure.
+  - id: !extend motor_sensor
     on_press:
       then:
         - lambda: |-
             auto &m = feeder::motor();
             m.on_grate_edge(millis());
             if (m.busy()) ESP_LOGD("feeder", "%d/%d loops", m.loops_done(), m.target());
-  # Outlet IR, high when something covers the beam: food crossing the outlet.
-  - id: feed_sensor
-    internal: true
-    platform: gpio
-    pin:
-      number: GPIO14
+  # Food crossing the outlet beam.
+  - id: !extend feed_sensor
     on_press:
       then:
         - lambda: |-
             feeder::motor().on_outlet_rise();
             id(food_sensor_count) += 1;
+  - id: !extend food_low
+    on_press:
+      then:
+        - lambda: |-
+            id(feeder_state).publish_state("Food level is low");
+            id(dispatch_feeder_food_low_event)->execute("${friendly_name} food level is low. Check the hopper.");
   # Stock idle filter on the outlet IR: covered 2 s sets BLOCK_DOOR, free 1 s clears it.
   - id: outlet_covered_idle
-    internal: true
     platform: template
+    internal: true
     lambda: return id(feed_sensor).state;
     filters:
       - delayed_on: 2s
@@ -814,30 +696,6 @@ binary_sensor:
     name: "Outlet blocked"
     device_class: problem
     icon: mdi:tray-alert
-  # Kibble IR in the hopper: GPIO13 high = food low (stock food state 1).
-  # Checked on the device: a full hopper reads GPIO13 low.
-  - id: food_low
-    platform: gpio
-    name: "Food low"
-    device_class: problem
-    icon: mdi:food-drumstick-off
-    pin:
-      number: GPIO13
-    filters:
-      - delayed_on_off: 30ms # stock: 3 identical reads
-    on_press:
-      then:
-        - lambda: |-
-            id(feeder_state).publish_state("Food level is low");
-            id(dispatch_feeder_food_low_event)->execute("${friendly_name} food level is low. Check the hopper.");
-  # GPIO21 high = running on batteries (stock "bat" flag).
-  - id: on_battery
-    platform: gpio
-    name: "On battery"
-    entity_category: diagnostic
-    icon: mdi:battery
-    pin:
-      number: GPIO21
   # Stock DC_ERR: on DC, input outside 4.5-7.0 V; on battery, input above 7.0 V; for > 4 s.
   - platform: template
     id: dc_fault
@@ -884,13 +742,6 @@ text_sensor:
     update_interval: 60s
 
 switch:
-  - id: enable_sensors
-    internal: true
-    platform: gpio
-    pin:
-      number: GPIO33
-    restore_mode: ALWAYS_ON
-    disabled_by_default: true
   - id: mute_sounds
     name: Mute sounds
     icon: mdi:volume-off
@@ -916,14 +767,6 @@ sensor:
   - platform: wifi_signal
     name: "Signal"
     update_interval: 60s
-  # Motor current shunt: ADC1 channel 4, 0 dB, read on demand by the motor loop.
-  - platform: adc
-    id: motor_current_adc
-    internal: true
-    pin: GPIO32
-    attenuation: 0db
-    samples: 32
-    update_interval: never
   - platform: template
     id: feed_max_current
     name: "Last feed max motor current"
@@ -939,30 +782,6 @@ sensor:
     entity_category: diagnostic
     accuracy_decimals: 0
     update_interval: never
-  # Stock dc_mv: ADC1 channel 3, 11 dB, divider 147/47.
-  - platform: adc
-    id: dc_voltage
-    name: "DC input voltage"
-    pin: GPIO39
-    attenuation: 12db
-    entity_category: diagnostic
-    update_interval: 2s
-    filters:
-      - multiply: 3.12766
-      - delta: 0.05
-  # Stock bat_mv: ADC1 channel 0, 11 dB, divider 147/47. On battery, stock keeps the 30 min peak.
-  - platform: adc
-    id: battery_voltage
-    name: "Battery voltage"
-    pin: GPIO36
-    attenuation: 12db
-    entity_category: diagnostic
-    update_interval: 60s
-    filters:
-      - multiply: 3.12766
-      - max:
-          window_size: 30
-          send_every: 1
   - platform: template
     id: dispensed_food_quantity
     name: "Dispensed food quantity"

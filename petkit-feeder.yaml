@@ -1,0 +1,26 @@
+# Petkit Fresh Element Solo: ready-to-use config.
+# Copy this file into your ESPHome Device Builder (or next to your secrets.yaml),
+# change the name if you like, and flash. Everything else comes from GitHub.
+substitutions:
+  name: petkit-feeder
+  friendly_name: Petkit Feeder
+  timezone: Europe/Paris # your time zone
+
+packages:
+  petkit:
+    url: https://github.com/Triskae/esphome-petkit-element-solo
+    ref: main
+    refresh: 1d
+    files: [config.yaml, feeder.yaml]
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password

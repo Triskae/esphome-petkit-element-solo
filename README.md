@@ -4,13 +4,41 @@
 
 It feeds on its own schedule, offline and without Home Assistant, using the on-board RTC. Motor control, jam handling, sensors, buttons, sounds and power checks follow the stock firmware, as recovered by analysing it (see [Documentation](#documentation)). It started from a community ESPHome config and fixes several of its issues (see [docs/motion.md](docs/motion.md#changes-from-the-community-config)).
 
-**Installing:**
-1. Copy `secrets.yaml.sample` to `secrets.yaml` and fill it in.
-2. Back up the stock flash first (4 MB).
-3. Flash `petkit-element-solo.yaml` over serial.
-4. After that, update it over the air.
+## Quick start
 
-**Several feeders:** `petkit-element-solo.yaml` is the shared firmware. For each extra feeder, add a small file like [`symba-feeder.yaml`](symba-feeder.yaml). It sets the name and points the API key and OTA password at that feeder's own secrets, then includes the shared firmware.
+You need ESPHome (the Home Assistant add-on / Device Builder, or the `esphome` command line) and, for the first flash only, a USB-serial adapter wired to the feeder's board.
+
+1. **Open the feeder and wire the serial adapter.** The board, the solder pads and the boot-mode button are shown on the [devices.esphome.io page](https://devices.esphome.io/devices/Petkit-Fresh-Element-Solo-Pet-Feeder/).
+2. **Back up the stock firmware** before anything else, so you can go back:
+   ```bash
+   esptool.py --baud 115200 read_flash 0 ALL petkit-stock-backup.bin
+   ```
+   Some boards have 8 MB of flash instead of 4 MB; `ALL` reads the whole chip either way.
+3. **Copy [`petkit-feeder.yaml`](petkit-feeder.yaml)** into your ESPHome Device Builder (or next to your `secrets.yaml`).
+   - Set `name`, `friendly_name` and `timezone`.
+   - Fill `wifi_ssid`, `wifi_password`, `api_encryption_key` and `ota_password` in your `secrets.yaml`. See [`secrets.yaml.sample`](secrets.yaml.sample).
+
+   The hardware (`config.yaml`), the feeding logic (`feeder.yaml`) and the motor controller (`components/feeder_motor`) are all pulled from this repository.
+4. **Flash it over serial once:**
+   ```bash
+   esphome run petkit-feeder.yaml
+   ```
+   Pick the USB port. Every later update goes over Wi-Fi.
+5. **Add the feeder in Home Assistant** (it is discovered automatically), and set the hourly scoops.
+
+**What's in the repository:**
+
+| File | Role |
+|---|---|
+| [`petkit-feeder.yaml`](petkit-feeder.yaml) | Ready-to-use config for your own feeder |
+| [`config.yaml`](config.yaml) | Hardware only: pins, sensors, motor outputs, RTC |
+| [`feeder.yaml`](feeder.yaml) | Feeding logic, entities and Home Assistant events |
+| [`components/feeder_motor`](components/feeder_motor) | Motor controller (`external_component`) |
+| `hella-feeder.yaml`, `symba-feeder.yaml` | The author's two feeders, using the local copy of the files: examples for several feeders |
+
+**Several feeders:** use one `petkit-feeder.yaml` copy per feeder, each with its own `name`. Each copy can point its API key and OTA password at its own secrets, as [`symba-feeder.yaml`](symba-feeder.yaml) does.
+
+**Coming from the community config:** the entity names are the same (hourly cups, `Dispense food`, `Manual dispense scoops`, ...). Your schedule is kept when you flash over the air. The `Low food threshold` entity is gone: food low now comes from the hopper sensor. You can remove the old entity from Home Assistant.
 
 
 ## Features
@@ -56,10 +84,10 @@ A feed of N scoops is N grate loops, plus one if the outlet was open. Each loop 
 | Brake | 1 | 1 | 1 |
 | Driver asleep | 0 | x | x |
 
-The state machine is in [`feeder_motor.h`](feeder_motor.h), with no ESPHome dependency. Its tests run on a computer:
+The state machine is in [`components/feeder_motor/feeder_motor.h`](components/feeder_motor/feeder_motor.h), with no ESPHome dependency. Its tests run on a computer:
 
 ```bash
-cd test && c++ -std=c++17 -Wall -Wextra -I.. feeder_motor_test.cpp -o /tmp/feeder_motor_test && /tmp/feeder_motor_test
+cd test && c++ -std=c++17 -Wall -Wextra -I../components/feeder_motor feeder_motor_test.cpp -o /tmp/feeder_motor_test && /tmp/feeder_motor_test
 ```
 
 
@@ -89,3 +117,17 @@ These pages describe behaviour in our own words and contain no code from the sto
 - [ ] SET button long press: start an ESPHome Wi-Fi setup mode (stock: network pairing)
 - [ ] Light sleep on batteries (stock: wakes at least every 9 min, and 30 s before a feed)
 - [ ] Schedules to the minute with repeat days
+
+
+## Disclaimer
+
+This is an independent, unofficial community project. It is **not affiliated with, endorsed by, sponsored by or supported by PETKIT** or any of its subsidiaries or partners.
+
+PETKIT, Fresh Element, Fresh Element Solo and the related names, logos and product designs are trademarks or registered trademarks of their respective owners. They are used here only to identify the hardware this firmware is meant for (nominative use). No affiliation is implied.
+
+This repository contains **no PETKIT code, firmware, binaries, keys or other proprietary material**. The behaviour of the original firmware was studied on a device owned by the author, for the sole purpose of interoperability: running the device with open-source software and controlling it locally. The documentation describes that behaviour in the author's own words. All code here is original.
+
+**Use at your own risk.** Opening the device, flashing a custom firmware or modifying the hardware will most likely void your warranty, and may damage the device or harm the animals relying on it. Always keep a backup of the original firmware and check that your pet is fed. The software is provided "as is", without warranty of any kind, and the authors accept no liability for any damage or loss arising from its use.
+
+If you are a rights holder and believe something here infringes your rights, please open an issue and it will be looked at promptly.
+

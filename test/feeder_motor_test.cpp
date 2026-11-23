@@ -1,4 +1,4 @@
-// Host test for feeder_motor.h:  c++ -std=c++17 -Wall -Wextra -I.. feeder_motor_test.cpp && ./a.out
+// Host test for feeder_motor.h:  c++ -std=c++17 -Wall -Wextra -I../components/feeder_motor feeder_motor_test.cpp && ./a.out
 #include "feeder_motor.h"
 
 #include <cstdio>
