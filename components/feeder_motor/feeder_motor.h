@@ -122,9 +122,11 @@ class MotorController {
         return phase_ == Phase::RUNNING ? run_drive_() : Drive::BRAKE;
       case Phase::CANCEL_WAIT:
         if (now - phase_start_ >= cfg_.cancel_pause_ms) {
-          if (closed_) {
+          // Read the grate now: the closed latch can be up to 300 ms stale after a loop.
+          if (grate_low) {
             finish_(cancel_result_(), now);
           } else {
+            closed_ = false;  // so the next closure counts
             begin_segment_(true, 1, now);  // close the outlet first
             return run_drive_();
           }

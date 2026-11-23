@@ -62,7 +62,6 @@ The firmware picks the style from the network state:
 When the user turns the LED "off" in the app, the blinking styles become a short flash: 50 ms on, 1.5 s off.
 
 ESPHome maps it as follows:
-- fast blink at boot;
 - on while Home Assistant is connected;
 - slow blink otherwise.
 

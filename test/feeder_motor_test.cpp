@@ -187,6 +187,20 @@ static void cancel_with_outlet_open_closes_it() {
   CHECK(b.finish() == Result::CANCELLED);
 }
 
+static void cancel_right_after_a_loop_reads_the_grate() {
+  Bench b;
+  idle_settles_closed(b);
+  b.m.start(3, b.t);
+  b.turn();                 // loop counted, latch says closed
+  b.grate_low = false;      // the grate opens again at once
+  b.run_for(50);            // still inside the 300 ms re-latch window
+  b.m.cancel(b.t);
+  CHECK(b.run_for(120) == Drive::FORWARD);  // must close the outlet first
+  b.grate_low = true;
+  b.m.on_grate_edge(b.t);
+  CHECK(b.finish() == Result::CANCELLED);
+}
+
 static void hold_feed_runs_while_held() {
   Bench b;
   idle_settles_closed(b);
@@ -227,6 +241,7 @@ int main() {
   reverse_timeout_is_a_fault();
   cancel_with_outlet_closed();
   cancel_with_outlet_open_closes_it();
+  cancel_right_after_a_loop_reads_the_grate();
   hold_feed_runs_while_held();
   covered_outlet_is_blocked();
   if (failures == 0) std::printf("all tests passed\n");
