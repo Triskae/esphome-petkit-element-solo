@@ -2,6 +2,7 @@
 substitutions:
   name: symba-feeder
   friendly_name: Symba Feeder
+  timezone: Europe/Paris
   ntp_server: !secret ntp_server
   feeder_component_source: components
 

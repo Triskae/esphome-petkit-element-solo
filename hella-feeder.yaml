@@ -2,6 +2,7 @@
 substitutions:
   name: hella-feeder
   friendly_name: Hella Feeder
+  timezone: Europe/Paris
   ntp_server: !secret ntp_server
   feeder_component_source: components
 
