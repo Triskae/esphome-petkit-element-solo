@@ -136,13 +136,12 @@ binary_sensor:
       mode:
         input: true
         pullup: true  # stock: pull-up on GPIO13, 14, 26 and 27
-  # Hopper IR receiver: high = food low (a full hopper reads low).
-  # The receiver only pulls the line low: without the pull-up it never reads high.
-  - id: food_low
+  # Hopper IR receiver. The stock firmware only polls it on one hardware variant; on the
+  # tested units nothing drives this line (it follows the pull-up), so `Food low` comes
+  # from the feed results instead (feeder.yaml). Kept as an internal input for testing.
+  - id: hopper_ir
     platform: gpio
-    name: Food low
-    device_class: problem
-    icon: mdi:food-drumstick-off
+    internal: true
     pin:
       number: GPIO13
       mode:

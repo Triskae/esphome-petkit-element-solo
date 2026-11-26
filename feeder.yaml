@@ -55,6 +55,10 @@ globals:
   - id: outlet_blocked_latched  # stock BLOCK_DOOR flag
     type: bool
     initial_value: "false"
+  - id: food_empty  # stock food state "empty", kept across reboots as stock does
+    type: bool
+    initial_value: "false"
+    restore_value: true
   # Set by the first Home Assistant or SNTP sync. Until then the RTC may hold the stock
   # firmware's local time, so scheduled feeds wait.
   - id: time_trusted
@@ -169,11 +173,14 @@ script:
                 break;  // BLOCK_DOOR event already sent; the count is not confirmed
               }
               if (n == 0) {
+                // Stock: a finished feed with no food seen sets the food state to "empty".
+                id(food_empty) = true;
                 id(feeder_state).publish_state("No food detected");
                 id(dispatch_feeder_food_low_event)->execute(
-                    "${friendly_name}: the motor turned but no food was seen at the outlet.");
+                    "${friendly_name}: the motor turned but no food was seen at the outlet. Check the hopper.");
                 break;
               }
+              id(food_empty) = false;  // stock: food seen, the food state is back to normal
               id(feeder_state).publish_state("Food dispensed");
               id(dispatch_feeder_food_dispensed_event)->execute(n == 1
                   ? std::string("${friendly_name} dispensed 1 scoop of food.")
@@ -701,12 +708,14 @@ binary_sensor:
         - lambda: |-
             feeder::motor().on_outlet_rise();
             id(food_sensor_count) += 1;
-  - id: !extend food_low
-    on_press:
-      then:
-        - lambda: |-
-            id(feeder_state).publish_state("Food level is low");
-            id(dispatch_feeder_food_low_event)->execute("${friendly_name} food level is low. Check the hopper.");
+  # Stock food state: set by a feed that saw no food at the outlet, cleared by a feed
+  # that did (see handle_feed_result). Refilling alone does not clear it.
+  - platform: template
+    id: food_low
+    name: Food low
+    device_class: problem
+    icon: mdi:food-drumstick-off
+    lambda: return id(food_empty);
   # Stock idle filter on the outlet IR: covered 2 s sets BLOCK_DOOR, free 1 s clears it.
   - id: outlet_covered_idle
     platform: template

@@ -14,7 +14,7 @@ What each ESP32 pin does on the PETKIT Fresh Element Solo (D4), as established w
 | GPIO27 | in, pull-up, interrupt on falling edge | Grate switch: low when the grate closes the outlet, once per loop | confirmed | `motor_sensor` |
 | GPIO14 | in, pull-up, interrupt on rising edge | Outlet IR: high when something covers the beam | confirmed | `feed_sensor`, `outlet_covered_idle` |
 | GPIO2 | out | Hopper (kibble) IR emitter | confirmed | `kibble_ir_emitter` |
-| GPIO13 | in, pull-up | Hopper (kibble) IR receiver: low = food present, high = food low | confirmed (polarity checked with a full hopper) | `food_low` |
+| GPIO13 | in, pull-up | Hopper (kibble) IR receiver, polled by stock on hardware variant `0xe5` only; not driven on the tested units | confirmed | `hopper_ir` (internal, unused) |
 | GPIO33 | out | Sensor power (IRs and switch) | confirmed | `enable_sensors`, always on |
 | GPIO23 | in, pull-up | "moto fail" line, never read by the stock firmware (see below) | confirmed | not used |
 | GPIO16 | out | Buzzer (stock: 2 kHz, 50 % duty) | confirmed | `rtttl_output` |

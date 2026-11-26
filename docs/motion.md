@@ -149,5 +149,5 @@ The stock firmware does not beep on faults, and neither does ESPHome.
 - **Reverse never worked there.** The reverse switch did not wake the driver (GPIO19).
 - **Stopping now brakes.** The community config cut all three pins, which let the motor coast.
 - **Loops are counted like stock.** The community config counted every GPIO27 press, with no re-latch, so switch bounce could count twice.
-- **Food low comes from the hopper IR** (GPIO13), as stock does. The community config guessed it from a ratio of GPIO14 counts.
+- **Food low comes from the feed results**, as stock does on these units: a feed with no food seen at the outlet sets it, a feed with food clears it. The community config guessed it from a ratio of GPIO14 counts.
 - **The button follows stock gestures.** A click cancels, and holding feeds while held. The community config fed a set amount on each press; that is still available from Home Assistant (`Dispense food`).

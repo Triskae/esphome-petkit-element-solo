@@ -38,7 +38,7 @@ You need ESPHome (the Home Assistant add-on / Device Builder, or the `esphome` c
 
 **Several feeders:** use one `petkit-feeder.yaml` copy per feeder, each with its own `name`. Each copy can point its API key and OTA password at its own secrets, as [`symba-feeder.yaml`](symba-feeder.yaml) does.
 
-**Coming from the community config:** the entity names are the same (hourly cups, `Dispense food`, `Manual dispense scoops`, ...). Your schedule is kept when you flash over the air. The `Low food threshold` entity is gone: food low now comes from the hopper sensor. You can remove the old entity from Home Assistant.
+**Coming from the community config:** the entity names are the same (hourly cups, `Dispense food`, `Manual dispense scoops`, ...). Your schedule is kept when you flash over the air. The `Low food threshold` entity is gone: food low now comes from the feed results, as stock. You can remove the old entity from Home Assistant.
 
 
 ## Features
@@ -50,7 +50,7 @@ Behaves like the stock firmware:
 - Clears jams automatically: reverses 1 or 2 loops, up to 5 attempts, then finishes the missing loops ([details](docs/motion.md#over-current-the-un-jam-sequence))
 - Reports a timeout as the stock `GRAT_ERR` or `BLOCK_FOOD`, judged against a current of 700 ([details](docs/motion.md#timeout-grate-error-or-food-blocked))
 - Counts only loops that dropped food (outlet IR), and detects a blocked outlet as `BLOCK_DOOR` ([details](docs/motion.md#food-at-the-outlet-gpio14))
-- Detects low food with the hopper IR, with the stock alarm: 5 beeps every 30 s ([details](docs/power.md#food-level))
+- Detects an empty hopper from the feed results, as stock, with the stock alarm: 5 beeps every 30 s ([details](docs/power.md#food-level))
 - Button like stock: click cancels, hold about 1.5 s to feed while held, child lock ([details](docs/hmi.md#buttons))
 - Cancels like stock: the outlet is always left closed ([details](docs/motion.md#cancelling))
 - Refuses to feed on a power fault, or with batteries at or below 5.5 V ([details](docs/power.md))
@@ -103,7 +103,7 @@ The stock firmware stored local time in the RTC, while ESPHome stores UTC. So un
 - [docs/hardware.md](docs/hardware.md): pinout, H-bridge, motor current, supply ADCs, GPIO23
 - [docs/motion.md](docs/motion.md): loop counting, outlet IR, motor runs, un-jam, replenish, cancel, hold-to-feed, and the ESPHome state machine
 - [docs/hmi.md](docs/hmi.md): buttons and their timings, LED styles, beep types
-- [docs/power.md](docs/power.md): DC and battery detection, power fault, low battery, hopper IR and the food-low alarm
+- [docs/power.md](docs/power.md): DC and battery detection, power fault, low battery, food level and the food-low alarm
 - [docs/rtc-and-time.md](docs/rtc-and-time.md): how the stock firmware uses the RTC, and how ESPHome does
 - [docs/schedule.md](docs/schedule.md): the stock schedule format, offline triggering and battery sleep
 

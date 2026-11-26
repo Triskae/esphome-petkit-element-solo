@@ -30,7 +30,7 @@ On batteries, a feed is refused when the battery is at or below **5.499 V**. ESP
 ### Battery-only behaviour (stock)
 
 Only on batteries, the stock firmware:
-- reads the hopper IR in power-saving mode (see below);
+- reads the hopper IR in power-saving mode, on the variant that uses it (see below);
 - does not sound the food-low alarm;
 - accepts the "ship mode" button combination.
 
@@ -44,32 +44,29 @@ ESPHome does not implement light sleep: on batteries, Wi-Fi stays on and drains 
 
 ## Food level
 
-An IR beam crosses the hopper: emitter on **GPIO2**, receiver on **GPIO13**.
+**Where "food low" comes from.** On the tested units, the stock food state is set by the **feed results**, not by a hopper sensor. At the end of a feed (not cancelled, outlet not blocked), the app task logs `app result over food empty!` and sets the state to **empty** when no food was seen at the outlet (`valid < 1`), or when fewer scoops than requested were seen and an internal flag is not set. Otherwise it sets the state back to **normal**. So refilling the hopper does not stop the alarm: the next feed that sees food does.
 
-The stock firmware sets GPIO13 as an input with the internal pull-up, in the same `gpio_config` call as GPIO14, GPIO26 and GPIO27. The receiver only pulls the line low, so without the pull-up GPIO13 reads 0 (food present) even with an empty hopper.
+The state is saved, so it survives a reboot. Each change is reported to the cloud.
 
-**Reading the beam.** The stock firmware reads it in one of two modes:
+**Hopper IR (one hardware variant only).** The firmware also has an IR beam across the hopper: emitter on **GPIO2**, receiver on **GPIO13**, with the internal pull-up (same `gpio_config` call as GPIO14, GPIO26 and GPIO27). It only polls it when a 2-character code in its stored config selects hardware variant `0xe5`:
 
 | Mode | How it reads |
 |---|---|
 | Normal (on DC) | Emitter always on; a new state needs 3 identical reads in a row. |
 | Power saving (on batteries) | Every second: emitter on, wait 50 ms, read; a new state needs 2 identical reads; emitter off. |
 
-**Food state.**
-- **GPIO13 = 0** means food is present: a full hopper reads 0, checked on the device. The firmware calls this food state 2.
-- **GPIO13 = 1** means the food is low: food state 1.
+On the two tested units, nothing drives GPIO13: it reads 0 without the pull-up and 1 with it, whether the hopper is full or empty, and it does not react when the emitter (GPIO2) or the sensor power (GPIO33) is switched off. These units are not that variant, or have no hopper sensor fitted.
 
-Each change is reported to the cloud.
-
-**Food-low alarm.** While the food is low, the firmware plays **5 beeps of 500 ms on / 500 ms off every 30 s**, under these conditions:
+**Food-low alarm.** While the food state is empty, the firmware plays **5 beeps of 500 ms on / 500 ms off every 30 s**, under these conditions:
 - the food-warning switch is on;
 - the time is inside the configured warning range;
 - the feeder is not on batteries.
 
 ESPHome:
-- keeps the emitter on;
-- exposes `Food low`, which is GPIO13 as read (high = low food), with a 30 ms filter;
-- sends `esphome.feeder_food_low` when it turns on;
+- sets `Food low` when a feed ends with no food seen at the outlet, and clears it when a feed sees food (kept across reboots);
+- does not use the partial-feed rule yet, because the flag it depends on is not identified;
+- sends `esphome.feeder_food_low` when a feed sees no food;
+- keeps the hopper emitter on and reads GPIO13 as an internal input (`hopper_ir`), unused;
 - plays the stock alarm every 30 s while `Food low alarm` is on, between `Food alarm from hour` and `Food alarm to hour`, and not on batteries.
 
-The first version read this the other way round, deduced from the code alone; a test with a full hopper settled it.
+Earlier versions took `Food low` from GPIO13. Without the pull-up it never turned on; with it, it never turned off.
