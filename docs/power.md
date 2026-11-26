@@ -46,6 +46,8 @@ ESPHome does not implement light sleep: on batteries, Wi-Fi stays on and drains 
 
 An IR beam crosses the hopper: emitter on **GPIO2**, receiver on **GPIO13**.
 
+The stock firmware sets GPIO13 as an input with the internal pull-up, in the same `gpio_config` call as GPIO14, GPIO26 and GPIO27. The receiver only pulls the line low, so without the pull-up GPIO13 reads 0 (food present) even with an empty hopper.
+
 **Reading the beam.** The stock firmware reads it in one of two modes:
 
 | Mode | How it reads |

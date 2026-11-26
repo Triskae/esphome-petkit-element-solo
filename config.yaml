@@ -124,13 +124,20 @@ binary_sensor:
     pin:
       number: GPIO27
       inverted: true
+      mode:
+        input: true
+        pullup: true  # stock: pull-up on GPIO13, 14, 26 and 27
   # Outlet IR: high when something covers the beam (food falling, or a full bowl).
   - id: feed_sensor
     platform: gpio
     internal: true
     pin:
       number: GPIO14
+      mode:
+        input: true
+        pullup: true  # stock: pull-up on GPIO13, 14, 26 and 27
   # Hopper IR receiver: high = food low (a full hopper reads low).
+  # The receiver only pulls the line low: without the pull-up it never reads high.
   - id: food_low
     platform: gpio
     name: Food low
@@ -138,6 +145,9 @@ binary_sensor:
     icon: mdi:food-drumstick-off
     pin:
       number: GPIO13
+      mode:
+        input: true
+        pullup: true  # stock: pull-up on GPIO13, 14, 26 and 27
     filters:
       - delayed_on_off: 30ms  # stock: 3 identical reads
   # High = running on batteries.
