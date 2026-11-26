@@ -59,6 +59,9 @@ globals:
     type: bool
     initial_value: "false"
     restore_value: true
+  - id: feed_requested_scoops  # scoops asked for by the running timed / app feed
+    type: int
+    initial_value: "0"
   # Set by the first Home Assistant or SNTP sync. Until then the RTC may hold the stock
   # firmware's local time, so scheduled feeds wait.
   - id: time_trusted
@@ -98,6 +101,7 @@ script:
             ESP_LOGW("feeder", "Feed of %d scoops refused: motor busy", scoops);
             return;
           }
+          id(feed_requested_scoops) = scoops;
           ESP_LOGI("feeder", "Serving %d scoops (%d loops)", scoops, feeder::motor().target());
           id(play_rtttl)->execute("${beep_short}");
           id(food_sensor_count) = 0;
@@ -180,7 +184,16 @@ script:
                     "${friendly_name}: the motor turned but no food was seen at the outlet. Check the hopper.");
                 break;
               }
-              id(food_empty) = false;  // stock: food seen, the food state is back to normal
+              // Stock: fewer scoops seen than asked for also means "empty", except for a
+              // button feed, which runs while held and has no requested amount.
+              if (!m.hold_mode() && n < id(feed_requested_scoops)) {
+                id(food_empty) = true;
+                id(dispatch_feeder_food_low_event)->execute(
+                    "${friendly_name}: only " + to_string(n) + " of " + to_string(id(feed_requested_scoops)) +
+                    " scoops were seen at the outlet. Check the hopper.");
+              } else {
+                id(food_empty) = false;  // stock: food seen, the food state is back to normal
+              }
               id(feeder_state).publish_state("Food dispensed");
               id(dispatch_feeder_food_dispensed_event)->execute(n == 1
                   ? std::string("${friendly_name} dispensed 1 scoop of food.")

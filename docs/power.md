@@ -44,7 +44,7 @@ ESPHome does not implement light sleep: on batteries, Wi-Fi stays on and drains 
 
 ## Food level
 
-**Where "food low" comes from.** On the tested units, the stock food state is set by the **feed results**, not by a hopper sensor. At the end of a feed (not cancelled, outlet not blocked), the app task logs `app result over food empty!` and sets the state to **empty** when no food was seen at the outlet (`valid < 1`), or when fewer scoops than requested were seen and an internal flag is not set. Otherwise it sets the state back to **normal**. So refilling the hopper does not stop the alarm: the next feed that sees food does.
+**Where "food low" comes from.** On the tested units, the stock food state is set by the **feed results**, not by a hopper sensor. At the end of a feed (not cancelled, outlet not blocked), the app task logs `app result over food empty!` and sets the state to **empty** when no food was seen at the outlet (`valid < 1`), or when fewer scoops than requested were seen and the feed was not started from the button. The feed source is the first field of the feed command, copied into the app context (`0` timed, `2` button: `dev key feeding,btn sta=%d`). A button feed runs while the button is held, so it has no requested amount. Otherwise it sets the state back to **normal**. So refilling the hopper does not stop the alarm: the next feed that sees food does.
 
 The state is saved, so it survives a reboot. Each change is reported to the cloud.
 
@@ -64,8 +64,8 @@ On the two tested units, nothing drives GPIO13: it reads 0 without the pull-up a
 
 ESPHome:
 - sets `Food low` when a feed ends with no food seen at the outlet, and clears it when a feed sees food (kept across reboots);
-- does not use the partial-feed rule yet, because the flag it depends on is not identified;
-- sends `esphome.feeder_food_low` when a feed sees no food;
+- also sets it when a timed or app feed sees fewer scoops than requested (not for a button feed);
+- sends `esphome.feeder_food_low` when a feed sees no food or too few scoops;
 - keeps the hopper emitter on and reads GPIO13 as an internal input (`hopper_ir`), unused;
 - plays the stock alarm every 30 s while `Food low alarm` is on, between `Food alarm from hour` and `Food alarm to hour`, and not on batteries.
 
